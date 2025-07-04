@@ -52,7 +52,6 @@ export default function AcceptRideScreen({ navigation }) {
     return (
       <View style={{ padding: 20 }}>
         <Text style={{ fontSize: 16 }}>No pending rides available.</Text>
-        <Button title="Logout" onPress={logout} color="red" />
 
       </View>
     );

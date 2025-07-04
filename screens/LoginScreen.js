@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, TextInput, Button, Alert } from 'react-native';
+import {
+  View,
+  TextInput,
+  Button,
+  Alert,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+} from 'react-native';
 import API, { setToken } from '../utils/api';
 
 export default function LoginScreen({ navigation, setIsLoggedIn }) {
@@ -17,11 +25,74 @@ export default function LoginScreen({ navigation, setIsLoggedIn }) {
   };
 
   return (
-    <View style={{ padding: 20 }}>
-      <TextInput placeholder="Username" value={username} onChangeText={setUsername} />
-      <TextInput placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
-      <Button title="Login" onPress={login} />
-      <Button title="Register" onPress={() => navigation.navigate('Register')} />
+    <View style={styles.container}>
+      <Text style={styles.title}>Login</Text>
+      <TextInput
+        placeholder="Username"
+        value={username}
+        onChangeText={setUsername}
+        style={styles.input}
+        autoCapitalize="none"
+      />
+      <TextInput
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        style={styles.input}
+        autoCapitalize="none"
+      />
+      <View style={styles.buttonContainer}>
+        <Button title="Login" onPress={login} />
+      </View>
+
+      <TouchableOpacity
+        onPress={() => navigation.navigate('Register')}
+        style={styles.registerContainer}
+      >
+        <Text style={styles.registerText}>
+          Don’t have an account? <Text style={styles.registerLink}>Register</Text>
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 30,
+    backgroundColor: '#fff',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 30,
+    textAlign: 'center',
+  },
+  input: {
+    height: 50,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    paddingHorizontal: 15,
+    marginBottom: 15,
+    borderRadius: 8,
+    backgroundColor: '#f9f9f9',
+  },
+  buttonContainer: {
+    marginVertical: 10,
+  },
+  registerContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  registerText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  registerLink: {
+    color: '#007bff',
+    textDecorationLine: 'underline',
+  },
+});
