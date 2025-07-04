@@ -1,3 +1,4 @@
+// AcceptRideScreen.js
 import React, { useEffect, useState } from 'react';
 import { View, Text, Button, FlatList, ActivityIndicator, Alert } from 'react-native';
 import API from '../utils/api';
