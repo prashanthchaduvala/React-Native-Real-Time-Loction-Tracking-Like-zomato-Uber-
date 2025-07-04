@@ -39,7 +39,6 @@
 //     </NavigationContainer>
 //   );
 // }
-
 import React, { useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -48,6 +47,7 @@ import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import RideRequestScreen from './screens/RideRequestScreen';
 import AcceptRideScreen from './screens/AcceptRideScreen';
+import TrackDistanceScreen from './screens/TrackDistanceScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -62,7 +62,10 @@ export default function App() {
             <Stack.Screen name="RideRequest">
               {(props) => <RideRequestScreen {...props} setIsLoggedIn={setIsLoggedIn} />}
             </Stack.Screen>
-            <Stack.Screen name="AcceptRide" component={AcceptRideScreen} />
+            <Stack.Screen name="AcceptRide">
+              {(props) => <AcceptRideScreen {...props} setIsLoggedIn={setIsLoggedIn} />}
+            </Stack.Screen>
+            <Stack.Screen name="TrackDistance" component={TrackDistanceScreen} /> {/* ✅ ADD THIS */}
           </>
         ) : (
           <>
@@ -76,4 +79,3 @@ export default function App() {
     </NavigationContainer>
   );
 }
-
