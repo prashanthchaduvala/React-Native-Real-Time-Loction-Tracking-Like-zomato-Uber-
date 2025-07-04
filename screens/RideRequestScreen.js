@@ -61,23 +61,27 @@ export default function RideRequestScreen({ navigation, setIsLoggedIn }) {
     });
 
     const rideId = res.data.ride?.id || res.data.id;
+    Alert.alert('Ride Created', 'Waiting for driver to accept...');
 
-    Alert.alert(
-      'Ride Created',
-      res.data.message || 'Your ride has been created.',
-      [
-        {
-          text: 'OK',
-          onPress: () => navigation.navigate('TrackDistance', { rideId }),
-        },
-      ]
-    );
+    // Poll every 5 seconds to see if accepted
+    const intervalId = setInterval(async () => {
+      try {
+        const statusRes = await API.get(`ride/status/${rideId}/`);
+        if (statusRes.data.status === 'accepted') {
+          clearInterval(intervalId);
+          navigation.navigate('TrackDistance', { rideId });
+        }
+      } catch (e) {
+        console.log('Polling error:', e.message);
+      }
+    }, 5000);
 
   } catch (err) {
     console.log('Create ride error:', err.response?.data || err.message);
     Alert.alert('Error', 'Could not create ride.');
   }
 };
+
 
   const logout = () => {
     setToken(null);
@@ -144,8 +148,7 @@ export default function RideRequestScreen({ navigation, setIsLoggedIn }) {
       )}
 
       <Button title="Request Ride" onPress={createRide} />
-      <Button title="Go to Accept Ride" onPress={() => navigation.navigate('AcceptRide')} />
-      <Button title="Logout" onPress={logout} color="red" />
+      {/* <Button title="Go to Accept Ride" onPress={() => navigation.navigate('AcceptRide')} /> */}
     </View>
   );
 }

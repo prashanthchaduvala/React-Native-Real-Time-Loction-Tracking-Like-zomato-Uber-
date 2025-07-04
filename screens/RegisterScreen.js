@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, TextInput, Button, Alert } from 'react-native';
+import {
+  View,
+  TextInput,
+  Button,
+  Alert,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
 import API from '../utils/api';
 
 export default function RegisterScreen({ navigation }) {
@@ -18,11 +26,81 @@ export default function RegisterScreen({ navigation }) {
   };
 
   return (
-    <View style={{ padding: 20 }}>
-      <TextInput placeholder="Username" value={username} onChangeText={setUsername} />
-      <TextInput placeholder="Email" value={email} onChangeText={setEmail} />
-      <TextInput placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
-      <Button title="Register" onPress={register} />
+    <View style={styles.container}>
+      <Text style={styles.title}>Register</Text>
+      <TextInput
+        placeholder="Username"
+        value={username}
+        onChangeText={setUsername}
+        style={styles.input}
+        autoCapitalize="none"
+      />
+      <TextInput
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        style={styles.input}
+        keyboardType="email-address"
+        autoCapitalize="none"
+      />
+      <TextInput
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        style={styles.input}
+      />
+      <View style={styles.buttonContainer}>
+        <Button title="Register" onPress={register} />
+      </View>
+
+      <TouchableOpacity
+        onPress={() => navigation.replace('Login')}
+        style={styles.loginContainer}
+      >
+        <Text style={styles.loginText}>
+          Already have an account? <Text style={styles.loginLink}>Login</Text>
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 30,
+    backgroundColor: '#fff',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 30,
+    textAlign: 'center',
+  },
+  input: {
+    height: 50,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    paddingHorizontal: 15,
+    marginBottom: 15,
+    borderRadius: 8,
+    backgroundColor: '#f9f9f9',
+  },
+  buttonContainer: {
+    marginVertical: 10,
+  },
+  loginContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  loginText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  loginLink: {
+    color: '#007bff',
+    textDecorationLine: 'underline',
+  },
+});
