@@ -1,3 +1,4 @@
+// RideRequestScreen.js
 import React, { useEffect, useState } from 'react';
 import { View, TextInput, Button, Text, Alert, FlatList, TouchableOpacity } from 'react-native';
 import * as Location from 'expo-location';
