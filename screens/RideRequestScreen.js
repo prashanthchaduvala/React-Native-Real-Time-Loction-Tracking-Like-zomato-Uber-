@@ -163,163 +163,91 @@
 //     </View>
 //   );
 // }
+
+
 import React, { useEffect, useState } from 'react';
-import {
-  View, TextInput, Button, Text, Alert, FlatList, TouchableOpacity
-} from 'react-native';
+import { View, TextInput, Button, Text, Alert, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import * as Location from 'expo-location';
 import API, { setToken } from '../utils/api';
-import { forwardGeocode } from '../utils/geocode'; // ✅ using OpenCage
+import { forwardGeocode } from '../utils/geocode';
 
 export default function RideRequestScreen({ navigation, setIsLoggedIn }) {
-  const [fromPlace, setFromPlace] = useState('');
+  const [currentLocation, setCurrentLocation] = useState(null);
   const [toPlace, setToPlace] = useState('');
-  const [fromCoords, setFromCoords] = useState(null);
-  const [fromSuggestions, setFromSuggestions] = useState([]);
   const [toSuggestions, setToSuggestions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Location permission is required.');
-        return;
-      }
+      if (status !== 'granted') return Alert.alert('Permission Denied', 'Location permission required');
 
-      const { coords } = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
+      const { coords } = await Location.getCurrentPositionAsync({});
+      setCurrentLocation({ lat: coords.latitude, lng: coords.longitude });
 
-      setFromCoords({ lat: coords.latitude, lng: coords.longitude });
+      await API.post('location/update/', { lat: coords.latitude, lng: coords.longitude });
+      setLoading(false);
     })();
   }, []);
 
-  const fetchSuggestions = async (query, setter) => {
-    if (!query || query.length < 2) {
-      setter([]);
-      return;
-    }
-    try {
-      const results = await forwardGeocode(query);
-      setter(results.map(item => item.name));
-    } catch (err) {
-      console.log('Suggestion error:', err.message);
-      setter([]);
-    }
-  };
-
   const createRide = async () => {
-    if (!fromCoords || !toPlace) {
-      Alert.alert('Error', 'Missing pickup or destination');
-      return;
-    }
+    if (!currentLocation || !toPlace) return Alert.alert('Error', 'Please enter destination');
 
     try {
-      // 1. Update live location
-      await API.post('location/update/', {
-        lat: fromCoords.lat,
-        lng: fromCoords.lng
-      });
+      const results = await forwardGeocode(toPlace);
+      if (!results.length) return Alert.alert('Error', 'Destination not found');
 
-      // 2. Geocode destination using OpenCage
-      const toResults = await forwardGeocode(toPlace);
-      if (!toResults.length) {
-        Alert.alert('Error', 'Destination not found');
-        return;
-      }
-      const to = toResults[0];
+      const to = results[0];
 
-      // 3. Create ride
       const res = await API.post('ride/create/', {
-        from_lat: fromCoords.lat,
-        from_lng: fromCoords.lng,
+        from_lat: currentLocation.lat,
+        from_lng: currentLocation.lng,
         to_lat: to.lat,
         to_lng: to.lng,
       });
 
-      const rideId = res.data.ride?.id || res.data.id;
-      Alert.alert('Ride Created', 'Waiting for driver to accept...');
+      const rideId = res.data.ride?.id;
+      Alert.alert('Ride Requested', 'Waiting for driver...');
 
       const intervalId = setInterval(async () => {
-        try {
-          const statusRes = await API.get(`ride/status/${rideId}/`);
-          if (statusRes.data.status === 'accepted') {
-            clearInterval(intervalId);
-            navigation.navigate('TrackDistance', { rideId });
-          }
-        } catch (e) {
-          console.log('Polling error:', e.message);
+        const statusRes = await API.get(`ride/status/${rideId}/`);
+        if (statusRes.data.status === 'accepted') {
+          clearInterval(intervalId);
+          navigation.navigate('TrackDistance', { rideId });
         }
       }, 5000);
-
     } catch (err) {
-      console.log('Create ride error:', err.response?.data || err.message);
-      Alert.alert('Error', 'Could not create ride.');
+      Alert.alert('Error', 'Failed to create ride');
     }
   };
 
-  const logout = () => {
-    setToken(null);
-    setIsLoggedIn(false);
-  };
+  if (loading) return <ActivityIndicator size="large" style={{ marginTop: 50 }} />;
 
   return (
     <View style={{ padding: 20 }}>
-      <Text>Pickup Location (optional)</Text>
-      <TextInput
-        value={fromPlace}
-        onChangeText={(text) => {
-          setFromPlace(text);
-          fetchSuggestions(text, setFromSuggestions);
-        }}
-        placeholder="Pickup location"
-        style={{ borderWidth: 1, marginBottom: 5, padding: 8 }}
-      />
-      {fromSuggestions.length > 0 && (
-        <FlatList
-          data={fromSuggestions}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={async () => {
-                setFromPlace(item);
-                setFromSuggestions([]);
-                const coords = await forwardGeocode(item);
-                setFromCoords(coords[0]);
-              }}
-            >
-              <Text style={{ padding: 8, backgroundColor: '#f0f0f0' }}>{item}</Text>
-            </TouchableOpacity>
-          )}
-        />
-      )}
-
-      <Text>Destination</Text>
+      <Text style={{ marginBottom: 5 }}>Enter Destination</Text>
       <TextInput
         value={toPlace}
-        onChangeText={(text) => {
+        onChangeText={async (text) => {
           setToPlace(text);
-          fetchSuggestions(text, setToSuggestions);
+          if (text.length >= 2) {
+            const results = await forwardGeocode(text);
+            setToSuggestions(results);
+          } else {
+            setToSuggestions([]);
+          }
         }}
-        placeholder="Enter destination"
-        style={{ borderWidth: 1, marginBottom: 5, padding: 8 }}
+        style={{ borderWidth: 1, marginBottom: 5, padding: 5 }}
+        placeholder="e.g., Mumbai Central"
       />
-      {toSuggestions.length > 0 && (
-        <FlatList
-          data={toSuggestions}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => {
-                setToPlace(item);
-                setToSuggestions([]);
-              }}
-            >
-              <Text style={{ padding: 8, backgroundColor: '#f0f0f0' }}>{item}</Text>
-            </TouchableOpacity>
-          )}
-        />
-      )}
+      {toSuggestions.map((item, index) => (
+        <TouchableOpacity key={index} onPress={() => {
+          setToPlace(item.name);
+          setToSuggestions([]);
+        }}>
+          <Text style={{ backgroundColor: '#eee', padding: 5 }}>{item.name}</Text>
+        </TouchableOpacity>
+      ))}
 
       <Button title="Request Ride" onPress={createRide} />
     </View>

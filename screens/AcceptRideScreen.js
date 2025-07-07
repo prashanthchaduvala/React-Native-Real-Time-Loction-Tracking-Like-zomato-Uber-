@@ -74,10 +74,9 @@
 //   );
 // }
 // AcceptRideScreen.js
+
 import React, { useEffect, useState } from 'react';
-import {
-  View, Text, Button, FlatList, ActivityIndicator, Alert
-} from 'react-native';
+import { View, Text, Button, FlatList, ActivityIndicator, Alert } from 'react-native';
 import API from '../utils/api';
 import { reverseGeocode } from '../utils/geocode';
 
@@ -88,39 +87,18 @@ export default function AcceptRideScreen({ navigation }) {
   const fetchRides = async () => {
     try {
       const res = await API.get('ride/pending/');
-
-      // Convert coordinates to place names using OpenCage reverse geocoding
-      const ridesWithPlaces = await Promise.all(
+      const formatted = await Promise.all(
         res.data.map(async (ride) => {
-          let fromPlace = 'Unknown';
-          let toPlace = 'Unknown';
-          try {
-            fromPlace = await reverseGeocode(ride.from_lat, ride.from_lng);
-            toPlace = await reverseGeocode(ride.to_lat, ride.to_lng);
-          } catch (geoErr) {
-            console.log('Geocoding error:', geoErr.message);
-          }
-          return { ...ride, fromPlace, toPlace };
+          const from = await reverseGeocode(ride.from_lat, ride.from_lng);
+          const to = await reverseGeocode(ride.to_lat, ride.to_lng);
+          return { ...ride, from, to };
         })
       );
-
-      setRides(ridesWithPlaces);
-    } catch (err) {
-      console.log('Fetch error:', err.response?.data || err.message);
-      Alert.alert('Error', 'Could not load rides');
+      setRides(formatted);
+    } catch {
+      Alert.alert('Error', 'Unable to load rides');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const acceptRide = async (id) => {
-    try {
-      await API.post(`ride/accept/${id}/`);
-      Alert.alert('Ride Accepted', 'Tracking will begin...');
-      navigation.navigate('TrackDistance', { rideId: id });
-    } catch (err) {
-      Alert.alert('Error', 'Failed to accept ride');
-      console.log('Accept error:', err.response?.data || err.message);
     }
   };
 
@@ -128,37 +106,27 @@ export default function AcceptRideScreen({ navigation }) {
     fetchRides();
   }, []);
 
-  if (loading) {
-    return <ActivityIndicator size="large" style={{ marginTop: 50 }} />;
-  }
+  const acceptRide = async (id) => {
+    try {
+      await API.post(`ride/accept/${id}/`);
+      Alert.alert('Ride Accepted', 'Starting tracking...');
+      navigation.navigate('TrackDistance', { rideId: id });
+    } catch {
+      Alert.alert('Error', 'Failed to accept ride');
+    }
+  };
 
-  if (rides.length === 0) {
-    return (
-      <View style={{ padding: 20 }}>
-        <Text style={{ fontSize: 16 }}>No pending rides available.</Text>
-      </View>
-    );
-  }
+  if (loading) return <ActivityIndicator style={{ marginTop: 50 }} size="large" />;
 
   return (
     <FlatList
       data={rides}
       keyExtractor={(item) => item.id.toString()}
       renderItem={({ item }) => (
-        <View style={{ padding: 15, borderBottomWidth: 1 }}>
-          <Text style={{ fontWeight: 'bold' }}>From:</Text>
-          <Text>{item.fromPlace}</Text>
-
-          <Text style={{ fontWeight: 'bold', marginTop: 5 }}>To:</Text>
-          <Text>{item.toPlace}</Text>
-
-          <Text style={{ marginTop: 5 }}>
-            Requested by: {item.requester?.username} ({item.requester?.email})
-          </Text>
-
-          <View style={{ marginTop: 10 }}>
-            <Button title="Accept Ride" onPress={() => acceptRide(item.id)} />
-          </View>
+        <View style={{ padding: 10, borderBottomWidth: 1 }}>
+          <Text>From: {item.from}</Text>
+          <Text>To: {item.to}</Text>
+          <Button title="Accept Ride" onPress={() => acceptRide(item.id)} />
         </View>
       )}
     />
