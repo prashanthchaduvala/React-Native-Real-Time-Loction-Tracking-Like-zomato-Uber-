@@ -1,4 +1,3 @@
-// RideRequestScreen.js
 import React, { useEffect, useState } from 'react';
 import { View, TextInput, Button, Text, Alert, FlatList, TouchableOpacity } from 'react-native';
 import * as Location from 'expo-location';
@@ -42,47 +41,59 @@ export default function RideRequestScreen({ navigation, setIsLoggedIn }) {
   };
 
   const createRide = async () => {
-  if (!fromCoords || !toPlace) return Alert.alert('Error', 'Missing pickup or destination');
+    if (!fromCoords || !toPlace) {
+      Alert.alert('Error', 'Missing pickup or destination');
+      return;
+    }
 
-  try {
-    const toRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(toPlace)}`);
-    const toData = await toRes.json();
-    if (!toData.length) return Alert.alert('Error', 'Destination not found');
+    try {
+      // 1. Update live location
+      await API.post('location/update/', {
+        lat: fromCoords.lat,
+        lng: fromCoords.lng
+      });
 
-    const to = {
-      lat: parseFloat(toData[0].lat),
-      lng: parseFloat(toData[0].lon),
-    };
-
-    const res = await API.post('ride/create/', {
-      from_lat: fromCoords.lat,
-      from_lng: fromCoords.lng,
-      to_lat: to.lat,
-      to_lng: to.lng,
-    });
-
-    const rideId = res.data.ride?.id || res.data.id;
-    Alert.alert('Ride Created', 'Waiting for driver to accept...');
-
-    // Poll every 5 seconds to see if accepted
-    const intervalId = setInterval(async () => {
-      try {
-        const statusRes = await API.get(`ride/status/${rideId}/`);
-        if (statusRes.data.status === 'accepted') {
-          clearInterval(intervalId);
-          navigation.navigate('TrackDistance', { rideId });
-        }
-      } catch (e) {
-        console.log('Polling error:', e.message);
+      // 2. Geocode destination
+      const toRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(toPlace)}`);
+      const toData = await toRes.json();
+      if (!toData.length) {
+        Alert.alert('Error', 'Destination not found');
+        return;
       }
-    }, 5000);
 
-  } catch (err) {
-    console.log('Create ride error:', err.response?.data || err.message);
-    Alert.alert('Error', 'Could not create ride.');
-  }
-};
+      const to = {
+        lat: parseFloat(toData[0].lat),
+        lng: parseFloat(toData[0].lon),
+      };
 
+      // 3. Create ride
+      const res = await API.post('ride/create/', {
+        from_lat: fromCoords.lat,
+        from_lng: fromCoords.lng,
+        to_lat: to.lat,
+        to_lng: to.lng,
+      });
+
+      const rideId = res.data.ride?.id || res.data.id;
+      Alert.alert('Ride Created', 'Waiting for driver to accept...');
+
+      const intervalId = setInterval(async () => {
+        try {
+          const statusRes = await API.get(`ride/status/${rideId}/`);
+          if (statusRes.data.status === 'accepted') {
+            clearInterval(intervalId);
+            navigation.navigate('TrackDistance', { rideId });
+          }
+        } catch (e) {
+          console.log('Polling error:', e.message);
+        }
+      }, 5000);
+
+    } catch (err) {
+      console.log('Create ride error:', err.response?.data || err.message);
+      Alert.alert('Error', 'Could not create ride.');
+    }
+  };
 
   const logout = () => {
     setToken(null);
@@ -149,7 +160,6 @@ export default function RideRequestScreen({ navigation, setIsLoggedIn }) {
       )}
 
       <Button title="Request Ride" onPress={createRide} />
-      {/* <Button title="Go to Accept Ride" onPress={() => navigation.navigate('AcceptRide')} /> */}
     </View>
   );
 }
