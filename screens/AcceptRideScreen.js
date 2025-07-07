@@ -28,18 +28,16 @@ export default function AcceptRideScreen({ navigation }) {
   };
 
   const acceptRide = async (id) => {
-    try {
-      await API.post(`ride/accept/${id}/`);
-      navigation.navigate('TrackDistance', { rideId: id });
-    } catch (err) {
-      Alert.alert('Error', 'Failed to accept ride');
-    }
-  };
+  try {
+    await API.post(`ride/accept/${id}/`);
+    Alert.alert('Ride Accepted', 'Tracking will begin...');
+    navigation.navigate('TrackDistance', { rideId: id }); // 👈 SHOW MAP
+  } catch (err) {
+    Alert.alert('Error', 'Failed to accept ride');
+  }
+};
 
-  const logout = () => {
-    setToken(null);           // clear token from axios
-    setIsLoggedIn(false);     // go back to login screen
-  };
+
 
 
 
