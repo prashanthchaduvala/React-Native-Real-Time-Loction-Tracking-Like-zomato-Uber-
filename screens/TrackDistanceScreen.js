@@ -160,8 +160,22 @@ export default function TrackDistanceScreen({ route }) {
       setRideStatus(statusRes.status);
       // const requesterId = rideDetails.requester.id;
       // const acceptedById = rideDetails.accepted_by?.id;
-      const requesterId = typeof rideDetails.requester === 'object' ? rideDetails.requester.id : rideDetails.requester;
-      const acceptedById = typeof rideDetails.accepted_by === 'object' ? rideDetails.accepted_by.id : rideDetails.accepted_by;
+      // const requesterId = typeof rideDetails.requester === 'object' ? rideDetails.requester.id : rideDetails.requester;
+      // const acceptedById = typeof rideDetails.accepted_by === 'object' ? rideDetails.accepted_by.id : rideDetails.accepted_by;
+      const requesterId = rideDetails.requester?.id || rideDetails.requester;
+      const acceptedById = rideDetails.accepted_by?.id || rideDetails.accepted_by;
+
+      console.log("Ride ID:", rideId);
+      console.log("Requester ID:", requesterId);
+      console.log("AcceptedBy ID:", acceptedById);
+      console.log("Ride Details:", rideDetails);
+
+
+
+      if (!acceptedById) {
+        Alert.alert('Error', 'Ride does not have an accepted user');
+        return;
+      }
 
       setIsAcceptedUser(me.id === acceptedById);
 
