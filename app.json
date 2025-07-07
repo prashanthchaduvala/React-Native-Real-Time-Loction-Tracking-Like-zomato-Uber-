@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "RideApp",
-    "slug": "RideApp",
+    "slug": "rideapp",
     "version": "8.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -22,11 +22,16 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.anonymous.RideApp",
-
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
       ]
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "d4b5671d-683e-41c9-a6a9-38e6ad8c4826"
+      }
+    },
+    "owner": "demodjangouser"
   }
 }
