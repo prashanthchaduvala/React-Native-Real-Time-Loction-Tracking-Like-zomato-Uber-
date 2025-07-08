@@ -269,21 +269,31 @@ export default function RideRequestScreen({ navigation }) {
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return Alert.alert('Permission Denied', 'Location access required.');
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Location permission is required');
+        return;
+      }
 
-      const { coords } = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      const loc = { lat: coords.latitude, lng: coords.longitude };
-      setCurrentLocation(loc);
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Highest,
+      });
 
-      // Update server
-      await API.post('location/update/', loc);
+      console.log('📍 Current location coordinates:', location.coords);
 
-      // Reverse geocode to get address (Hyderabad, etc.)
-      const place = await reverseGeocode(loc.lat, loc.lng);
-      setFromPlace(place);
+      setCurrentLocation({
+        lat: location.coords.latitude,
+        lng: location.coords.longitude,
+      });
+
+      await API.post('location/update/', {
+        lat: location.coords.latitude,
+        lng: location.coords.longitude,
+      });
+
       setLoading(false);
     })();
   }, []);
+
 
   const createRide = async () => {
     if (!currentLocation || !toPlace) {

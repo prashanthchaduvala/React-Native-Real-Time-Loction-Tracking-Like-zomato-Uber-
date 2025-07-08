@@ -270,7 +270,9 @@ import {
   Platform,
   StyleSheet,
 } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+// import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, Polyline } from 'react-native-maps';
+
 import * as Location from 'expo-location';
 import API from '../utils/api';
 import { haversineDistance } from '../utils/haversine';
@@ -380,7 +382,11 @@ export default function TrackDistanceScreen({ route }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.status}>🚦 Ride Status: {rideStatus}</Text>
+      <Text style={{ padding: 10, fontSize: 16 }}>
+        {rideStatus === 'accepted' && `📏 Distance to pickup: ${haversineDistance(myCoords, pickupCoords).toFixed(2)} km`}
+        {rideStatus === 'started' && `🏁 Distance to destination: ${haversineDistance(myCoords, destCoords).toFixed(2)} km`}
+      </Text>
+
       <MapView
         ref={mapRef}
         style={styles.map}
@@ -413,16 +419,45 @@ export default function TrackDistanceScreen({ route }) {
         />
 
         {/* Destination location */}
-        {rideStatus === 'started' || rideStatus === 'completed' ? (
-          <Marker
-            coordinate={{
-              latitude: parseFloat(destCoords.lat),
-              longitude: parseFloat(destCoords.lng),
-            }}
-            title="Destination"
-            pinColor="purple"
+        {/* Before pickup: Show line from driver to pickup */}
+        {/* Before pickup: Show line from driver to pickup */}
+        {rideStatus === 'accepted' && (
+          <Polyline
+            coordinates={[
+              {
+                latitude: parseFloat(myCoords.lat),
+                longitude: parseFloat(myCoords.lng),
+              },
+              {
+                latitude: parseFloat(pickupCoords.lat),
+                longitude: parseFloat(pickupCoords.lng),
+              },
+            ]}
+            strokeColor="blue"
+            strokeWidth={3}
           />
-        ) : null}
+        )}
+
+        {/* After pickup: Show line from current to destination */}
+        {rideStatus === 'started' && (
+          <Polyline
+            coordinates={[
+              {
+                latitude: parseFloat(myCoords.lat),
+                longitude: parseFloat(myCoords.lng),
+              },
+              {
+                latitude: parseFloat(destCoords.lat),
+                longitude: parseFloat(destCoords.lng),
+              },
+            ]}
+            strokeColor="purple"
+            strokeWidth={3}
+          />
+        )}
+
+
+
       </MapView>
     </View>
   );
