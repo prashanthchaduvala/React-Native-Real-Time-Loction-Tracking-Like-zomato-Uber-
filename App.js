@@ -89,6 +89,7 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import RideRequestScreen from './screens/RideRequestScreen';
+
 import AcceptRideScreen from './screens/AcceptRideScreen';
 import TrackDistanceScreen from './screens/TrackDistanceScreen';
 
