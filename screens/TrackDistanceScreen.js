@@ -261,10 +261,16 @@
 //     </View>
 //   );
 // }
-
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, Alert, ActivityIndicator, Platform } from 'react-native';
-import MapView, { Marker, AnimatedRegion } from 'react-native-maps';
+import {
+  View,
+  Text,
+  Alert,
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+} from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import API from '../utils/api';
 import { haversineDistance } from '../utils/haversine';
@@ -273,81 +279,166 @@ export default function TrackDistanceScreen({ route }) {
   const { rideId } = route.params;
   const [rideStatus, setRideStatus] = useState('');
   const [loading, setLoading] = useState(true);
+  const [myCoords, setMyCoords] = useState(null);
+  const [pickupCoords, setPickupCoords] = useState(null);
+  const [destCoords, setDestCoords] = useState(null);
+  const [isDriver, setIsDriver] = useState(false);
+
   const mapRef = useRef(null);
 
-  const myCoord = useRef(new AnimatedRegion({ latitude: 0, longitude: 0, latitudeDelta: 0.01, longitudeDelta: 0.01 })).current;
-  const otherCoord = useRef(new AnimatedRegion({ latitude: 0, longitude: 0, latitudeDelta: 0.01, longitudeDelta: 0.01 })).current;
-
-  const fetchAndUpdate = async () => {
+  const updateLocation = async () => {
     try {
-      const [statusRes, detailsRes, meRes] = await Promise.all([
+      const [
+        { data: rideStatusRes },
+        { data: rideDetails },
+        { data: me },
+      ] = await Promise.all([
         API.get(`ride/status/${rideId}/`),
         API.get(`ride/details/${rideId}/`),
-        API.get('user/me/')
+        API.get('user/me/'),
       ]);
 
-      setRideStatus(statusRes.data.status);
-
-      const requesterId = detailsRes.data.requester?.id || detailsRes.data.requester;
-      const acceptedById = detailsRes.data.accepted_by?.id || detailsRes.data.accepted_by;
-
-      const [loc1, loc2] = await Promise.all([
-        API.get(`location/${requesterId}/`),
-        API.get(`location/${acceptedById}/`)
-      ]);
+      setRideStatus(rideStatusRes.status);
+      setIsDriver(me.id === rideDetails.accepted_by);
 
       const { coords } = await Location.getCurrentPositionAsync({});
-      await API.post('location/update/', { lat: coords.latitude, lng: coords.longitude });
+      const myLoc = {
+        lat: coords.latitude,
+        lng: coords.longitude,
+      };
+      setMyCoords(myLoc);
 
-      myCoord.timing({ latitude: coords.latitude, longitude: coords.longitude, duration: 2000, useNativeDriver: false }).start();
-      otherCoord.timing({ latitude: loc1.data.lat, longitude: loc1.data.lng, duration: 2000, useNativeDriver: false }).start();
+      await API.post('location/update/', {
+        lat: myLoc.lat,
+        lng: myLoc.lng,
+      });
 
-      const distance = haversineDistance(
-        { lat: coords.latitude, lng: coords.longitude },
-        { lat: loc1.data.lat, lng: loc1.data.lng }
-      );
+      const pickupLoc = {
+        lat: rideDetails.from_lat,
+        lng: rideDetails.from_lng,
+      };
+      const destinationLoc = {
+        lat: rideDetails.to_lat,
+        lng: rideDetails.to_lng,
+      };
 
-      if (distance <= 0.1 && rideStatus === 'accepted') {
-        await API.post(`ride/start/${rideId}/`);
-        setRideStatus('started');
-        Alert.alert('Ride Started');
-      } else if (distance <= 0.1 && rideStatus === 'started') {
-        await API.post(`ride/complete/${rideId}/`);
-        setRideStatus('completed');
-        Alert.alert('Ride Completed');
+      setPickupCoords(pickupLoc);
+      setDestCoords(destinationLoc);
+
+      // Adjust map to show both
+      if (mapRef.current) {
+        mapRef.current.fitToCoordinates(
+          [
+            { latitude: myLoc.lat, longitude: myLoc.lng },
+            { latitude: pickupLoc.lat, longitude: pickupLoc.lng },
+          ],
+          {
+            edgePadding: { top: 100, bottom: 100, left: 100, right: 100 },
+            animated: true,
+          }
+        );
+      }
+
+      // Only driver will control ride state
+      if (me.id === rideDetails.accepted_by) {
+        if (rideStatusRes.status === 'accepted') {
+          const dist = haversineDistance(myLoc, pickupLoc);
+          if (dist <= 0.1) {
+            await API.post(`ride/start/${rideId}/`);
+            setRideStatus('started');
+            Alert.alert('✅ Ride Started', 'Passenger picked up');
+          }
+        } else if (rideStatusRes.status === 'started') {
+          const dist = haversineDistance(myLoc, destinationLoc);
+          if (dist <= 0.1) {
+            await API.post(`ride/complete/${rideId}/`);
+            setRideStatus('completed');
+            Alert.alert('🏁 Ride Completed', 'You reached the destination');
+          }
+        }
       }
 
       setLoading(false);
     } catch (err) {
-      console.log('Tracking error:', err);
+      console.log('Track error:', err.message);
     }
   };
 
   useEffect(() => {
-    fetchAndUpdate();
-    const interval = setInterval(fetchAndUpdate, 9000);
+    updateLocation();
+    const interval = setInterval(updateLocation, 8000);
     return () => clearInterval(interval);
   }, []);
 
-  if (Platform.OS === 'web') return <Text>Tracking works only on device.</Text>;
-  if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" />;
+  if (Platform.OS === 'web') {
+    return <Text>❌ Tracking not supported on web</Text>;
+  }
+
+  if (loading || !myCoords || !pickupCoords) {
+    return <ActivityIndicator style={{ flex: 1 }} size="large" color="blue" />;
+  }
 
   return (
-    <View style={{ flex: 1 }}>
-      <Text style={{ padding: 10 }}>Ride Status: {rideStatus}</Text>
+    <View style={styles.container}>
+      <Text style={styles.status}>🚦 Ride Status: {rideStatus}</Text>
       <MapView
         ref={mapRef}
-        style={{ flex: 1 }}
+        style={styles.map}
         initialRegion={{
-          latitude: myCoord.__getValue().latitude,
-          longitude: myCoord.__getValue().longitude,
+          latitude: myCoords.lat || 17.385,
+          longitude: myCoords.lng || 78.4867,
           latitudeDelta: 0.05,
           longitudeDelta: 0.05,
         }}
       >
-        <Marker.Animated coordinate={myCoord} title="You" />
-        <Marker.Animated coordinate={otherCoord} title="Other User" pinColor="green" />
+        {/* Driver location */}
+        <Marker
+          coordinate={{
+            latitude: parseFloat(myCoords.lat),
+            longitude: parseFloat(myCoords.lng),
+          }}
+          title={isDriver ? 'Driver (You)' : 'You'}
+        >
+          <Text style={{ fontSize: 24 }}>🚗</Text>
+        </Marker>
+
+        {/* Pickup location */}
+        <Marker
+          coordinate={{
+            latitude: parseFloat(pickupCoords.lat),
+            longitude: parseFloat(pickupCoords.lng),
+          }}
+          title="Pickup"
+          pinColor="green"
+        />
+
+        {/* Destination location */}
+        {rideStatus === 'started' || rideStatus === 'completed' ? (
+          <Marker
+            coordinate={{
+              latitude: parseFloat(destCoords.lat),
+              longitude: parseFloat(destCoords.lng),
+            }}
+            title="Destination"
+            pinColor="purple"
+          />
+        ) : null}
       </MapView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  map: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  status: {
+    padding: 10,
+    fontWeight: 'bold',
+    fontSize: 16,
+    backgroundColor: '#f0f0f0',
+  },
+});
