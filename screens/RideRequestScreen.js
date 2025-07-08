@@ -165,14 +165,103 @@
 // }
 
 
-import React, { useEffect, useState } from 'react';
-import { View, TextInput, Button, Text, Alert, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
-import * as Location from 'expo-location';
-import API, { setToken } from '../utils/api';
-import { forwardGeocode } from '../utils/geocode';
+// import React, { useEffect, useState } from 'react';
+// import { View, TextInput, Button, Text, Alert, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+// import * as Location from 'expo-location';
+// import API, { setToken } from '../utils/api';
+// import { forwardGeocode } from '../utils/geocode';
 
-export default function RideRequestScreen({ navigation, setIsLoggedIn }) {
-  const [currentLocation, setCurrentLocation] = useState(null);
+// export default function RideRequestScreen({ navigation, setIsLoggedIn }) {
+//   const [currentLocation, setCurrentLocation] = useState(null);
+//   const [toPlace, setToPlace] = useState('');
+//   const [toSuggestions, setToSuggestions] = useState([]);
+//   const [loading, setLoading] = useState(true);
+
+//   useEffect(() => {
+//     (async () => {
+//       const { status } = await Location.requestForegroundPermissionsAsync();
+//       if (status !== 'granted') return Alert.alert('Permission Denied', 'Location permission required');
+
+//       const { coords } = await Location.getCurrentPositionAsync({});
+//       setCurrentLocation({ lat: coords.latitude, lng: coords.longitude });
+
+//       await API.post('location/update/', { lat: coords.latitude, lng: coords.longitude });
+//       setLoading(false);
+//     })();
+//   }, []);
+
+//   const createRide = async () => {
+//     if (!currentLocation || !toPlace) return Alert.alert('Error', 'Please enter destination');
+
+//     try {
+//       const results = await forwardGeocode(toPlace);
+//       if (!results.length) return Alert.alert('Error', 'Destination not found');
+
+//       const to = results[0];
+
+//       const res = await API.post('ride/create/', {
+//         from_lat: currentLocation.lat,
+//         from_lng: currentLocation.lng,
+//         to_lat: to.lat,
+//         to_lng: to.lng,
+//       });
+
+//       const rideId = res.data.ride?.id;
+//       Alert.alert('Ride Requested', 'Waiting for driver...');
+
+//       const intervalId = setInterval(async () => {
+//         const statusRes = await API.get(`ride/status/${rideId}/`);
+//         if (statusRes.data.status === 'accepted') {
+//           clearInterval(intervalId);
+//           navigation.navigate('TrackDistance', { rideId });
+//         }
+//       }, 5000);
+//     } catch (err) {
+//       Alert.alert('Error', 'Failed to create ride');
+//     }
+//   };
+
+//   if (loading) return <ActivityIndicator size="large" style={{ marginTop: 50 }} />;
+
+//   return (
+//     <View style={{ padding: 20 }}>
+//       <Text style={{ marginBottom: 5 }}>Enter Destination</Text>
+//       <TextInput
+//         value={toPlace}
+//         onChangeText={async (text) => {
+//           setToPlace(text);
+//           if (text.length >= 2) {
+//             const results = await forwardGeocode(text);
+//             setToSuggestions(results);
+//           } else {
+//             setToSuggestions([]);
+//           }
+//         }}
+//         style={{ borderWidth: 1, marginBottom: 5, padding: 5 }}
+//         placeholder="e.g., Mumbai Central"
+//       />
+//       {toSuggestions.map((item, index) => (
+//         <TouchableOpacity key={index} onPress={() => {
+//           setToPlace(item.name);
+//           setToSuggestions([]);
+//         }}>
+//           <Text style={{ backgroundColor: '#eee', padding: 5 }}>{item.name}</Text>
+//         </TouchableOpacity>
+//       ))}
+
+//       <Button title="Request Ride" onPress={createRide} />
+//     </View>
+//   );
+// }
+import React, { useEffect, useState } from 'react';
+import { View, TextInput, Button, Text, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
+import * as Location from 'expo-location';
+import API from '../utils/api';
+import { forwardGeocode, reverseGeocode } from '../utils/geocode';
+
+export default function RideRequestScreen({ navigation }) {
+  const [currentLocation, setCurrentLocation] = useState(null); // { lat, lng }
+  const [fromPlace, setFromPlace] = useState(''); // editable location
   const [toPlace, setToPlace] = useState('');
   const [toSuggestions, setToSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -180,18 +269,26 @@ export default function RideRequestScreen({ navigation, setIsLoggedIn }) {
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return Alert.alert('Permission Denied', 'Location permission required');
+      if (status !== 'granted') return Alert.alert('Permission Denied', 'Location access required.');
 
-      const { coords } = await Location.getCurrentPositionAsync({});
-      setCurrentLocation({ lat: coords.latitude, lng: coords.longitude });
+      const { coords } = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const loc = { lat: coords.latitude, lng: coords.longitude };
+      setCurrentLocation(loc);
 
-      await API.post('location/update/', { lat: coords.latitude, lng: coords.longitude });
+      // Update server
+      await API.post('location/update/', loc);
+
+      // Reverse geocode to get address (Hyderabad, etc.)
+      const place = await reverseGeocode(loc.lat, loc.lng);
+      setFromPlace(place);
       setLoading(false);
     })();
   }, []);
 
   const createRide = async () => {
-    if (!currentLocation || !toPlace) return Alert.alert('Error', 'Please enter destination');
+    if (!currentLocation || !toPlace) {
+      return Alert.alert('Missing Info', 'Please enter destination.');
+    }
 
     try {
       const results = await forwardGeocode(toPlace);
@@ -206,8 +303,8 @@ export default function RideRequestScreen({ navigation, setIsLoggedIn }) {
         to_lng: to.lng,
       });
 
-      const rideId = res.data.ride?.id;
       Alert.alert('Ride Requested', 'Waiting for driver...');
+      const rideId = res.data.ride?.id;
 
       const intervalId = setInterval(async () => {
         const statusRes = await API.get(`ride/status/${rideId}/`);
@@ -217,14 +314,22 @@ export default function RideRequestScreen({ navigation, setIsLoggedIn }) {
         }
       }, 5000);
     } catch (err) {
-      Alert.alert('Error', 'Failed to create ride');
+      Alert.alert('Error', 'Ride creation failed');
     }
   };
 
-  if (loading) return <ActivityIndicator size="large" style={{ marginTop: 50 }} />;
+  if (loading) return <ActivityIndicator style={{ marginTop: 50 }} size="large" />;
 
   return (
     <View style={{ padding: 20 }}>
+      <Text style={{ marginBottom: 5 }}>Your Current Location</Text>
+      <TextInput
+        value={fromPlace}
+        onChangeText={(text) => setFromPlace(text)}
+        style={{ borderWidth: 1, padding: 5, marginBottom: 10 }}
+        placeholder="e.g., Gachibowli, Hyderabad"
+      />
+
       <Text style={{ marginBottom: 5 }}>Enter Destination</Text>
       <TextInput
         value={toPlace}
@@ -240,6 +345,7 @@ export default function RideRequestScreen({ navigation, setIsLoggedIn }) {
         style={{ borderWidth: 1, marginBottom: 5, padding: 5 }}
         placeholder="e.g., Mumbai Central"
       />
+
       {toSuggestions.map((item, index) => (
         <TouchableOpacity key={index} onPress={() => {
           setToPlace(item.name);
