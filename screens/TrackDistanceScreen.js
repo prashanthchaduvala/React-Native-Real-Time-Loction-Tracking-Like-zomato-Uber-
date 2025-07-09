@@ -382,10 +382,21 @@ export default function TrackDistanceScreen({ route }) {
 
   return (
     <View style={styles.container}>
-      <Text style={{ padding: 10, fontSize: 16 }}>
+      {/* <Text style={{ padding: 10, fontSize: 16 }}>
         {rideStatus === 'accepted' && `📏 Distance to pickup: ${haversineDistance(myCoords, pickupCoords).toFixed(2)} km`}
         {rideStatus === 'started' && `🏁 Distance to destination: ${haversineDistance(myCoords, destCoords).toFixed(2)} km`}
+      </Text> */}
+
+      <Text style={{ padding: 10, fontSize: 16 }}>
+        {rideStatus === 'accepted' &&
+          `📏 Distance to pickup: ${(
+            haversineDistance(myCoords, pickupCoords) * 1000
+          ).toFixed(0)} meters`}
+
+        {rideStatus === 'started' &&
+          `🏁 Distance to destination: ${haversineDistance(myCoords, destCoords).toFixed(2)} km`}
       </Text>
+
 
       <MapView
         ref={mapRef}
@@ -409,14 +420,17 @@ export default function TrackDistanceScreen({ route }) {
         </Marker>
 
         {/* Pickup location */}
+       {/* Pickup (requester) location marker */}
         <Marker
           coordinate={{
             latitude: parseFloat(pickupCoords.lat),
             longitude: parseFloat(pickupCoords.lng),
           }}
-          title="Pickup"
-          pinColor="green"
-        />
+          title={isDriver ? 'Rider (Pickup)' : 'You'}
+        >
+          <Text style={{ fontSize: 20 }}>📍</Text>
+        </Marker>
+
 
         {/* Destination location */}
         {/* Before pickup: Show line from driver to pickup */}
@@ -451,7 +465,7 @@ export default function TrackDistanceScreen({ route }) {
                 longitude: parseFloat(destCoords.lng),
               },
             ]}
-            strokeColor="purple"
+            strokeColor="green"
             strokeWidth={3}
           />
         )}

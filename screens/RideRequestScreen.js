@@ -253,6 +253,8 @@
 //     </View>
 //   );
 // }
+
+
 import React, { useEffect, useState } from 'react';
 import { View, TextInput, Button, Text, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import * as Location from 'expo-location';
@@ -262,6 +264,7 @@ import { forwardGeocode, reverseGeocode } from '../utils/geocode';
 export default function RideRequestScreen({ navigation }) {
   const [currentLocation, setCurrentLocation] = useState(null); // { lat, lng }
   const [fromPlace, setFromPlace] = useState(''); // editable location
+  const [fromEdited, setFromEdited] = useState(false);
   const [toPlace, setToPlace] = useState('');
   const [toSuggestions, setToSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -278,39 +281,53 @@ export default function RideRequestScreen({ navigation }) {
         accuracy: Location.Accuracy.Highest,
       });
 
-      console.log('📍 Current location coordinates:', location.coords);
-
-      setCurrentLocation({
+      const coords = {
         lat: location.coords.latitude,
         lng: location.coords.longitude,
-      });
+      };
 
-      await API.post('location/update/', {
-        lat: location.coords.latitude,
-        lng: location.coords.longitude,
-      });
+      setCurrentLocation(coords);
 
+      const place = await reverseGeocode(coords.lat, coords.lng);
+      setFromPlace(place);
+
+      await API.post('location/update/', coords);
       setLoading(false);
     })();
   }, []);
 
-
   const createRide = async () => {
-    if (!currentLocation || !toPlace) {
+    if (!toPlace) {
       return Alert.alert('Missing Info', 'Please enter destination.');
     }
 
     try {
-      const results = await forwardGeocode(toPlace);
-      if (!results.length) return Alert.alert('Error', 'Destination not found');
+      // Determine final "from" coordinates
+      let fromCoords = currentLocation;
 
-      const to = results[0];
+      if (fromEdited && fromPlace.trim()) {
+        const fromResults = await forwardGeocode(fromPlace);
+        if (!fromResults.length) return Alert.alert('Error', 'Invalid starting location');
+        fromCoords = {
+          lat: fromResults[0].lat,
+          lng: fromResults[0].lng,
+        };
+      }
 
+      // Destination coordinates
+      const toResults = await forwardGeocode(toPlace);
+      if (!toResults.length) return Alert.alert('Error', 'Destination not found');
+      const toCoords = {
+        lat: toResults[0].lat,
+        lng: toResults[0].lng,
+      };
+
+      // Create ride
       const res = await API.post('ride/create/', {
-        from_lat: currentLocation.lat,
-        from_lng: currentLocation.lng,
-        to_lat: to.lat,
-        to_lng: to.lng,
+        from_lat: fromCoords.lat,
+        from_lng: fromCoords.lng,
+        to_lat: toCoords.lat,
+        to_lng: toCoords.lng,
       });
 
       Alert.alert('Ride Requested', 'Waiting for driver...');
@@ -325,6 +342,7 @@ export default function RideRequestScreen({ navigation }) {
       }, 5000);
     } catch (err) {
       Alert.alert('Error', 'Ride creation failed');
+      console.error('Create Ride Error:', err.message);
     }
   };
 
@@ -332,10 +350,13 @@ export default function RideRequestScreen({ navigation }) {
 
   return (
     <View style={{ padding: 20 }}>
-      <Text style={{ marginBottom: 5 }}>Your Current Location</Text>
+      <Text style={{ marginBottom: 5 }}>Your Current Location (Editable)</Text>
       <TextInput
         value={fromPlace}
-        onChangeText={(text) => setFromPlace(text)}
+        onChangeText={(text) => {
+          setFromPlace(text);
+          setFromEdited(true);
+        }}
         style={{ borderWidth: 1, padding: 5, marginBottom: 10 }}
         placeholder="e.g., Gachibowli, Hyderabad"
       />
@@ -353,7 +374,7 @@ export default function RideRequestScreen({ navigation }) {
           }
         }}
         style={{ borderWidth: 1, marginBottom: 5, padding: 5 }}
-        placeholder="e.g., Mumbai Central"
+        placeholder="e.g., Karimnagar"
       />
 
       {toSuggestions.map((item, index) => (
