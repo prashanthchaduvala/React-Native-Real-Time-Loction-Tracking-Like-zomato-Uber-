@@ -22,40 +22,40 @@ const API_KEY = 'aaeca258c9f845c3a81355fad04d2ccb';
 
 
 
-// Convert coordinates to a place name (reverse geocoding)
-export const reverseGeocode = async (lat, lng) => {
-  try {
-    const response = await fetch(
-      `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=${API_KEY}&language=en&pretty=1`
-    );
-    const data = await response.json();
-    if (data.results.length > 0) {
-      return data.results[0].formatted;
-    }
-    return 'Unknown location';
-  } catch (error) {
-    console.log('Reverse geocoding error:', error.message);
-    return 'Unknown location';
-  }
-};
+// // Convert coordinates to a place name (reverse geocoding)
+// export const reverseGeocode = async (lat, lng) => {
+//   try {
+//     const response = await fetch(
+//       `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=${API_KEY}&language=en&pretty=1`
+//     );
+//     const data = await response.json();
+//     if (data.results.length > 0) {
+//       return data.results[0].formatted;
+//     }
+//     return 'Unknown location';
+//   } catch (error) {
+//     console.log('Reverse geocoding error:', error.message);
+//     return 'Unknown location';
+//   }
+// };
 
-// Convert place name to coordinates (forward geocoding)
-export const forwardGeocode = async (query) => {
-  try {
-    const response = await fetch(
-      `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(query)}&key=${API_KEY}&language=en&limit=5`
-    );
-    const data = await response.json();
-    return data.results.map(item => ({
-      name: item.formatted,
-      lat: item.geometry.lat,
-      lng: item.geometry.lng
-    }));
-  } catch (error) {
-    console.log('Forward geocoding error:', error.message);
-    return [];
-  }
-};
+// // Convert place name to coordinates (forward geocoding)
+// export const forwardGeocode = async (query) => {
+//   try {
+//     const response = await fetch(
+//       `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(query)}&key=${API_KEY}&language=en&limit=5`
+//     );
+//     const data = await response.json();
+//     return data.results.map(item => ({
+//       name: item.formatted,
+//       lat: item.geometry.lat,
+//       lng: item.geometry.lng
+//     }));
+//   } catch (error) {
+//     console.log('Forward geocoding error:', error.message);
+//     return [];
+//   }
+// };
 
 
 // const OPENCAGE_API_KEY = 'aaeca258c9f845c3a81355fad04d2ccb'; // Use a free or paid key
@@ -99,3 +99,48 @@ export const forwardGeocode = async (query) => {
 //     return 'Unknown';
 //   }
 // }
+
+
+
+const GOOGLE_API_KEY = 'AIzaSyBajb1RfU7eDL7W7yL7EdC_tTI-9g6mmPY'; // 🔁 Replace this
+
+// Forward Geocoding: Convert place name to coordinates
+export const forwardGeocode = async (place) => {
+  try {
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(place)}&key=${GOOGLE_API_KEY}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.status !== 'OK') {
+      console.log('Forward geocode error:', data.status);
+      return [];
+    }
+
+    return data.results.map(item => ({
+      name: item.formatted_address,
+      lat: item.geometry.location.lat,
+      lng: item.geometry.location.lng,
+    }));
+  } catch (error) {
+    console.log('Forward geocoding error:', error.message);
+    return [];
+  }
+};
+
+// Reverse Geocoding: Convert coordinates to a place name
+export const reverseGeocode = async (lat, lng) => {
+  try {
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_API_KEY}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.status !== 'OK' || data.results.length === 0) {
+      return 'Unknown location';
+    }
+
+    return data.results[0].formatted_address;
+  } catch (error) {
+    console.log('Reverse geocoding error:', error.message);
+    return 'Unknown location';
+  }
+};

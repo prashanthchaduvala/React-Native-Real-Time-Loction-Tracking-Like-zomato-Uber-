@@ -399,6 +399,7 @@ export default function TrackDistanceScreen({ route }) {
 
 
       <MapView
+        provider={Platform.OS === 'android' ? 'google' : undefined}
         ref={mapRef}
         style={styles.map}
         initialRegion={{
