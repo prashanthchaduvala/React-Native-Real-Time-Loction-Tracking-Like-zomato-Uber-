@@ -101,19 +101,22 @@ const API_KEY = 'aaeca258c9f845c3a81355fad04d2ccb';
 // }
 
 
+const GOOGLE_API_KEY = 'AIzaSyBajb1RfU7eDL7W7yL7EdC_tTI-9g6mmPY'; // 🔒 Use safely
 
-const GOOGLE_API_KEY = 'AIzaSyBajb1RfU7eDL7W7yL7EdC_tTI-9g6mmPY'; // 🔁 Replace this
-
-// Forward Geocoding: Convert place name to coordinates
+// Forward: Place name -> Coordinates
 export const forwardGeocode = async (place) => {
   try {
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(place)}&key=${GOOGLE_API_KEY}`;
     const res = await fetch(url);
     const data = await res.json();
 
-    if (data.status !== 'OK') {
+    if (data.status !== 'OK' || !data.results.length) {
       console.log('Forward geocode error:', data.status);
-      return [];
+      return [{
+        name: 'Unknown',
+        lat: 0,
+        lng: 0,
+      }];
     }
 
     return data.results.map(item => ({
@@ -123,18 +126,23 @@ export const forwardGeocode = async (place) => {
     }));
   } catch (error) {
     console.log('Forward geocoding error:', error.message);
-    return [];
+    return [{
+      name: 'Unknown',
+      lat: 0,
+      lng: 0,
+    }];
   }
 };
 
-// Reverse Geocoding: Convert coordinates to a place name
+// Reverse: Coordinates -> Place name
 export const reverseGeocode = async (lat, lng) => {
   try {
     const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_API_KEY}`;
     const res = await fetch(url);
     const data = await res.json();
 
-    if (data.status !== 'OK' || data.results.length === 0) {
+    if (data.status !== 'OK' || !data.results.length) {
+      console.warn('Reverse geocode failed');
       return 'Unknown location';
     }
 

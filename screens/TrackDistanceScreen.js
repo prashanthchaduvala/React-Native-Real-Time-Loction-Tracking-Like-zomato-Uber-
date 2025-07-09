@@ -412,8 +412,8 @@ export default function TrackDistanceScreen({ route }) {
         {/* Driver location */}
         <Marker
           coordinate={{
-            latitude: parseFloat(myCoords.lat),
-            longitude: parseFloat(myCoords.lng),
+            latitude: safeCoord(myCoords.lat),
+            longitude: safeCoord(myCoords.lng),
           }}
           title={isDriver ? 'Driver (You)' : 'You'}
         >
@@ -424,8 +424,8 @@ export default function TrackDistanceScreen({ route }) {
        {/* Pickup (requester) location marker */}
         <Marker
           coordinate={{
-            latitude: parseFloat(pickupCoords.lat),
-            longitude: parseFloat(pickupCoords.lng),
+            latitude: safeCoord(pickupCoords.lat),
+            longitude: safeCoord(pickupCoords.lng),
           }}
           title={isDriver ? 'Rider (Pickup)' : 'You'}
         >
@@ -440,12 +440,12 @@ export default function TrackDistanceScreen({ route }) {
           <Polyline
             coordinates={[
               {
-                latitude: parseFloat(myCoords.lat),
-                longitude: parseFloat(myCoords.lng),
+                latitude: safeCoord(myCoords.lat),
+                longitude: safeCoord(myCoords.lng),
               },
               {
-                latitude: parseFloat(pickupCoords.lat),
-                longitude: parseFloat(pickupCoords.lng),
+                latitude: safeCoord(pickupCoords.lat),
+                longitude: safeCoord(pickupCoords.lng),
               },
             ]}
             strokeColor="blue"
@@ -458,12 +458,12 @@ export default function TrackDistanceScreen({ route }) {
           <Polyline
             coordinates={[
               {
-                latitude: parseFloat(myCoords.lat),
-                longitude: parseFloat(myCoords.lng),
+                latitude: safeCoord(myCoords.lat),
+                longitude: safeCoord(myCoords.lng),
               },
               {
-                latitude: parseFloat(destCoords.lat),
-                longitude: parseFloat(destCoords.lng),
+                latitude: safeCoord(destCoords.lat),
+                longitude: safeCoord(destCoords.lng),
               },
             ]}
             strokeColor="green"

@@ -274,11 +274,13 @@ export default function RideRequestScreen({ navigation }) {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission Denied', 'Location permission is required');
+        setLoading(false);
         return;
       }
 
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Highest,
+        timeout: 5000,
       });
 
       const coords = {
