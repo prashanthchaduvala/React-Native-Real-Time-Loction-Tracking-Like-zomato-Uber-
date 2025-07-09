@@ -254,7 +254,7 @@
 //   );
 // }
 
-
+//RiderequestScreen.js
 import React, { useEffect, useState } from 'react';
 import { View, TextInput, Button, Text, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import * as Location from 'expo-location';
