@@ -21,7 +21,15 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdge": true
+      "edgeToEdge": true,
+
+      "config": {
+        "googleMaps": {
+          "apiKey": "aaeca258c9f845c3a81355fad04d2ccb"
+        }
+      }
+
+
     },
     "ios": {
       "supportsTablet": true
