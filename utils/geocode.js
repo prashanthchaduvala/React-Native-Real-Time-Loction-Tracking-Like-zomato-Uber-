@@ -101,54 +101,100 @@ const API_KEY = 'aaeca258c9f845c3a81355fad04d2ccb';
 // }
 
 
-const GOOGLE_API_KEY = 'AIzaSyBajb1RfU7eDL7W7yL7EdC_tTI-9g6mmPY'; // 🔒 Use safely
+// const GOOGLE_API_KEY = 'AIzaSyBajb1RfU7eDL7W7yL7EdC_tTI-9g6mmPY'; // 🔒 Use safely
 
-// Forward: Place name -> Coordinates
+// // Forward: Place name -> Coordinates
+// export const forwardGeocode = async (place) => {
+//   try {
+//     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(place)}&key=${GOOGLE_API_KEY}`;
+//     const res = await fetch(url);
+//     const data = await res.json();
+
+//     if (data.status !== 'OK' || !data.results.length) {
+//       console.log('Forward geocode error:', data.status);
+//       return [{
+//         name: 'Unknown',
+//         lat: 0,
+//         lng: 0,
+//       }];
+//     }
+
+//     return data.results.map(item => ({
+//       name: item.formatted_address,
+//       lat: item.geometry.location.lat,
+//       lng: item.geometry.location.lng,
+//     }));
+//   } catch (error) {
+//     console.log('Forward geocoding error:', error.message);
+//     return [{
+//       name: 'Unknown',
+//       lat: 0,
+//       lng: 0,
+//     }];
+//   }
+// };
+
+// // Reverse: Coordinates -> Place name
+// export const reverseGeocode = async (lat, lng) => {
+//   try {
+//     const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_API_KEY}`;
+//     const res = await fetch(url);
+//     const data = await res.json();
+
+//     if (data.status !== 'OK' || !data.results.length) {
+//       console.warn('Reverse geocode failed');
+//       return 'Unknown location';
+//     }
+
+//     return data.results[0].formatted_address;
+//   } catch (error) {
+//     console.log('Reverse geocoding error:', error.message);
+//     return 'Unknown location';
+//   }
+// };
+
+
+// geocode.js
+
+// Forward Geocoding: place name → coordinates
 export const forwardGeocode = async (place) => {
   try {
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(place)}&key=${GOOGLE_API_KEY}`;
-    const res = await fetch(url);
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place)}&addressdetails=1&limit=5&countrycodes=in`;
+
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'RideApp/1.0 (prashanthpatelc@email.com)' // Required by Nominatim
+      }
+    });
+
     const data = await res.json();
 
-    if (data.status !== 'OK' || !data.results.length) {
-      console.log('Forward geocode error:', data.status);
-      return [{
-        name: 'Unknown',
-        lat: 0,
-        lng: 0,
-      }];
-    }
-
-    return data.results.map(item => ({
-      name: item.formatted_address,
-      lat: item.geometry.location.lat,
-      lng: item.geometry.location.lng,
+    return data.map(item => ({
+      name: item.display_name,
+      lat: parseFloat(item.lat),
+      lng: parseFloat(item.lon),
     }));
   } catch (error) {
-    console.log('Forward geocoding error:', error.message);
-    return [{
-      name: 'Unknown',
-      lat: 0,
-      lng: 0,
-    }];
+    console.error('Forward geocoding error:', error);
+    return [];
   }
 };
 
-// Reverse: Coordinates -> Place name
+// Reverse Geocoding: coordinates → place name
 export const reverseGeocode = async (lat, lng) => {
   try {
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_API_KEY}`;
-    const res = await fetch(url);
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`;
+    
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'RideApp/1.0 (prashanthpatelc@email.com)'
+      }
+    });
+
     const data = await res.json();
-
-    if (data.status !== 'OK' || !data.results.length) {
-      console.warn('Reverse geocode failed');
-      return 'Unknown location';
-    }
-
-    return data.results[0].formatted_address;
+    return data.display_name || 'Unknown';
   } catch (error) {
-    console.log('Reverse geocoding error:', error.message);
-    return 'Unknown location';
+    console.error('Reverse geocoding error:', error);
+    return 'Unknown';
   }
 };
