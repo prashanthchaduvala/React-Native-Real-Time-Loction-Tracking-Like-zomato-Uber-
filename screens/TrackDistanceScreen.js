@@ -273,7 +273,6 @@ import {
 } from 'react-native';
 // import MapView, { Marker } from 'react-native-maps';
 import MapView, { Marker, Polyline, Callout, CalloutSubview, PROVIDER_GOOGLE } from 'react-native-maps';
-
 import * as Location from 'expo-location';
 import API from '../utils/api';
 import { haversineDistance } from '../utils/haversine';

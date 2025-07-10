@@ -50,8 +50,6 @@ const API = axios.create({
   baseURL: 'https://api-test3.cdaitsolutions.com',
 });
 
-// Add token to headers
-// Load token on app start
 export const loadToken = async () => {
   const token = await AsyncStorage.getItem('token');
   if (token) {
@@ -59,10 +57,19 @@ export const loadToken = async () => {
   }
 };
 
-// Set token on login
 export const setToken = async (token) => {
   await AsyncStorage.setItem('token', token);
   API.defaults.headers.common['Authorization'] = `Token ${token}`;
+};
+
+// <--- Add this function:
+export const clearToken = async () => {
+  try {
+    await AsyncStorage.removeItem('token');
+    delete API.defaults.headers.common['Authorization'];
+  } catch (e) {
+    console.error('Error clearing token', e);
+  }
 };
 
 export default API;
