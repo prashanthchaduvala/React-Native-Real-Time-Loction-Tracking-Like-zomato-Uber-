@@ -14,28 +14,57 @@
 
 // export default API;
 
-import axios from 'axios';
+// import axios from 'axios';
+
+// // const API = axios.create({
+// //   baseURL: 'http://127.0.0.1:6001/',
+// //   // baseURL:'http://192.168.231.85:6001/', 
+// // });
 
 // const API = axios.create({
-//   baseURL: 'http://127.0.0.1:6001/',
-//   // baseURL:'http://192.168.231.85:6001/', 
+//     baseURL: 'https://api-test3.cdaitsolutions.com',
+//     // baseURL:'http://192.168.231.85:6001/',
+//     // baseURL: 'http://127.0.0.1:6001/',
 // });
 
+// export let authToken = null;
+
+// export const setToken = (token) => {
+//   authToken = token;
+//   if (token) {
+//     API.defaults.headers.common['Authorization'] = `Token ${token}`;
+//   } else {
+//     delete API.defaults.headers.common['Authorization'];
+//   }
+// };
+
+// export default API;
+
+
+
+// utils/api.js
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const API = axios.create({
-    baseURL: 'https://api-test3.cdaitsolutions.com',
-    // baseURL:'http://192.168.231.85:6001/',
-    // baseURL: 'http://127.0.0.1:6001/',
+  baseURL: 'https://api-test3.cdaitsolutions.com',
 });
 
-export let authToken = null;
-
-export const setToken = (token) => {
-  authToken = token;
+// Add token to headers
+API.interceptors.request.use(async (config) => {
+  const token = await AsyncStorage.getItem('token');
   if (token) {
-    API.defaults.headers.common['Authorization'] = `Token ${token}`;
-  } else {
-    delete API.defaults.headers.common['Authorization'];
+    config.headers.Authorization = `Token ${token}`;
   }
+  return config;
+});
+
+export const setToken = async (token) => {
+  await AsyncStorage.setItem('token', token);
+};
+
+export const clearToken = async () => {
+  await AsyncStorage.removeItem('token');
 };
 
 export default API;

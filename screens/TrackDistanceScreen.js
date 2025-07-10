@@ -261,7 +261,7 @@
 //     </View>
 //   );
 // }
-
+// TrackDistanceScreen.js
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
@@ -272,7 +272,7 @@ import {
   StyleSheet,
 } from 'react-native';
 // import MapView, { Marker } from 'react-native-maps';
-import MapView, { Marker, Polyline } from 'react-native-maps';
+import MapView, { Marker, Polyline, Callout, CalloutSubview, PROVIDER_GOOGLE } from 'react-native-maps';
 
 import * as Location from 'expo-location';
 import API from '../utils/api';

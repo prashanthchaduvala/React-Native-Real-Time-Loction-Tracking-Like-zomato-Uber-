@@ -93,11 +93,18 @@ import RideRequestScreen from './screens/RideRequestScreen';
 import AcceptRideScreen from './screens/AcceptRideScreen';
 import TrackDistanceScreen from './screens/TrackDistanceScreen';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect } from 'react';
+import { clearToken } from './utils/api'; // assuming you exported it
+
+
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 
+
 function LogoutScreen({ setIsLoggedIn }) {
   React.useEffect(() => {
+    clearToken(); // remove token from storage
     setIsLoggedIn(false);
   }, []);
 
@@ -108,6 +115,9 @@ function LogoutScreen({ setIsLoggedIn }) {
     </View>
   );
 }
+
+
+
 
 function AppDrawer({ setIsLoggedIn }) {
   return (
@@ -129,7 +139,23 @@ function AppDrawer({ setIsLoggedIn }) {
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  console.log('Rendering App, loggedIn:', isLoggedIn);
+  const [loading, setLoading] = useState(true); // <-- Add loading state
+
+  useEffect(() => {
+    (async () => {
+      const token = await AsyncStorage.getItem('token');
+      if (token) setIsLoggedIn(true);
+      setLoading(false);
+    })();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer>
@@ -137,20 +163,14 @@ export default function App() {
         {isLoggedIn ? (
           <>
             <Stack.Screen name="Home">
-              {() => {
-                console.log('Rendering Drawer');
-                return <AppDrawer setIsLoggedIn={setIsLoggedIn} />;
-              }}
+              {() => <AppDrawer setIsLoggedIn={setIsLoggedIn} />}
             </Stack.Screen>
             <Stack.Screen name="TrackDistance" component={TrackDistanceScreen} />
           </>
         ) : (
           <>
             <Stack.Screen name="Login">
-              {(props) => {
-                console.log('Rendering Login');
-                return <LoginScreen {...props} setIsLoggedIn={setIsLoggedIn} />;
-              }}
+              {(props) => <LoginScreen {...props} setIsLoggedIn={setIsLoggedIn} />}
             </Stack.Screen>
             <Stack.Screen name="Register" component={RegisterScreen} />
           </>
@@ -159,4 +179,3 @@ export default function App() {
     </NavigationContainer>
   );
 }
-
