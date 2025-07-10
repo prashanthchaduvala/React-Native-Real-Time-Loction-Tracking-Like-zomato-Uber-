@@ -156,45 +156,88 @@ const API_KEY = 'aaeca258c9f845c3a81355fad04d2ccb';
 
 // geocode.js
 
-// Forward Geocoding: place name → coordinates
+// // Forward Geocoding: place name → coordinates
+// export const forwardGeocode = async (place) => {
+//   try {
+//     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place)}&addressdetails=1&limit=5&countrycodes=in`;
+
+//     const res = await fetch(url, {
+//       headers: {
+//         'User-Agent': 'RideApp/1.0 (prashanthpatelc@email.com)' // Required by Nominatim
+//       }
+//     });
+
+//     const data = await res.json();
+
+//     return data.map(item => ({
+//       name: item.display_name,
+//       lat: parseFloat(item.lat),
+//       lng: parseFloat(item.lon),
+//     }));
+//   } catch (error) {
+//     console.error('Forward geocoding error:', error);
+//     return [];
+//   }
+// };
+
+// // Reverse Geocoding: coordinates → place name
+// export const reverseGeocode = async (lat, lng) => {
+//   try {
+//     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`;
+    
+//     const res = await fetch(url, {
+//       headers: {
+//         'User-Agent': 'RideApp/1.0 (prashanthpatelc@email.com)'
+//       }
+//     });
+
+//     const data = await res.json();
+//     return data.display_name || 'Unknown';
+//   } catch (error) {
+//     console.error('Reverse geocoding error:', error);
+//     return 'Unknown';
+//   }
+// };
+const GOOGLE_API_KEY = 'AIzaSyBajb1RfU7eDL7W7yL7EdC_tTI-9g6mmPY'; // Secure this in production
+
+// Forward Geocode: Place → Coordinates
 export const forwardGeocode = async (place) => {
   try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place)}&addressdetails=1&limit=5&countrycodes=in`;
-
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'RideApp/1.0 (prashanthpatelc@email.com)' // Required by Nominatim
-      }
-    });
-
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(place)}&key=${GOOGLE_API_KEY}`;
+    const res = await fetch(url);
     const data = await res.json();
 
-    return data.map(item => ({
-      name: item.display_name,
-      lat: parseFloat(item.lat),
-      lng: parseFloat(item.lon),
+    if (data.status !== 'OK' || !data.results.length) {
+      console.warn('Forward geocode error:', data.status);
+      return [];
+    }
+
+    return data.results.map(item => ({
+      name: item.formatted_address,
+      lat: item.geometry.location.lat,
+      lng: item.geometry.location.lng,
     }));
   } catch (error) {
-    console.error('Forward geocoding error:', error);
+    console.error('Forward geocoding error:', error.message);
     return [];
   }
 };
 
-// Reverse Geocoding: coordinates → place name
+// Reverse Geocode: Coordinates → Place
 export const reverseGeocode = async (lat, lng) => {
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`;
-    
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'RideApp/1.0 (prashanthpatelc@email.com)'
-      }
-    });
-
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_API_KEY}`;
+    const res = await fetch(url);
     const data = await res.json();
-    return data.display_name || 'Unknown';
+
+    if (data.status !== 'OK' || !data.results.length) {
+      console.warn('Reverse geocode failed:', data.status);
+      return 'Unknown location';
+    }
+
+    return data.results[0].formatted_address;
   } catch (error) {
-    console.error('Reverse geocoding error:', error);
-    return 'Unknown';
+    console.error('Reverse geocoding error:', error.message);
+    return 'Unknown location';
   }
 };
