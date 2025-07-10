@@ -279,7 +279,8 @@ import API from '../utils/api';
 import { haversineDistance } from '../utils/haversine';
 
 export default function TrackDistanceScreen({ route }) {
-  const { rideId } = route.params;
+  // const { rideId } = route.params;
+  const { rideId } = route.params || {};
   const [rideStatus, setRideStatus] = useState('');
   const [loading, setLoading] = useState(true);
   const [myCoords, setMyCoords] = useState(null);
@@ -368,10 +369,15 @@ export default function TrackDistanceScreen({ route }) {
   };
 
   useEffect(() => {
-    updateLocation();
-    const interval = setInterval(updateLocation, 8000);
-    return () => clearInterval(interval);
+    try {
+      updateLocation();
+      const interval = setInterval(updateLocation, 8000);
+      return () => clearInterval(interval);
+    } catch (error) {
+      console.error('Error in useEffect:', error.message);
+    }
   }, []);
+
 
   if (Platform.OS === 'web') {
     return <Text>❌ Tracking not supported on web</Text>;
@@ -493,3 +499,4 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
   },
 });
+
