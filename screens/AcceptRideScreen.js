@@ -114,15 +114,19 @@ export default function AcceptRideScreen({ navigation }) {
   };
 
   const acceptRide = async (id) => {
-    try {
-      await API.post(`ride/accept/${id}/`);
-      Alert.alert('Ride Accepted', 'Tracking will begin...');
-      navigation.navigate('TrackDistance', { rideId: id });
-    } catch (err) {
-      Alert.alert('Error', 'Failed to accept ride');
-      console.log('Accept error:', err.response?.data || err.message);
-    }
-  };
+  try {
+    console.log('Ride ID to accept:', id);
+    const res = await API.post(`ride/accept/${id}/`);
+    console.log('Ride accepted response:', res.data);
+    // Alert.alert('Ride Accepted', 'Tracking will begin...');
+    navigation.navigate('TrackDistance', { rideId: id }); // ✅ Check this works
+    
+  } catch (err) {
+    Alert.alert('Error', 'Failed to accept ride');
+    console.log('Accept error:', err.response?.data || err.message);
+  }
+};
+
 
   useEffect(() => {
     fetchRides();

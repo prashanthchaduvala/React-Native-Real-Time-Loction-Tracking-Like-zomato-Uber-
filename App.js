@@ -166,6 +166,7 @@ export default function App() {
               {() => <AppDrawer setIsLoggedIn={setIsLoggedIn} />}
             </Stack.Screen>
             <Stack.Screen name="TrackDistance" component={TrackDistanceScreen} />
+
           </>
         ) : (
           <>

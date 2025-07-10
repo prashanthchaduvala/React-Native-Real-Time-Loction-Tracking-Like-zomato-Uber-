@@ -51,20 +51,18 @@ const API = axios.create({
 });
 
 // Add token to headers
-API.interceptors.request.use(async (config) => {
+// Load token on app start
+export const loadToken = async () => {
   const token = await AsyncStorage.getItem('token');
   if (token) {
-    config.headers.Authorization = `Token ${token}`;
+    API.defaults.headers.common['Authorization'] = `Token ${token}`;
   }
-  return config;
-});
-
-export const setToken = async (token) => {
-  await AsyncStorage.setItem('token', token);
 };
 
-export const clearToken = async () => {
-  await AsyncStorage.removeItem('token');
+// Set token on login
+export const setToken = async (token) => {
+  await AsyncStorage.setItem('token', token);
+  API.defaults.headers.common['Authorization'] = `Token ${token}`;
 };
 
 export default API;
