@@ -1,4 +1,7 @@
-const OPENCAGE_API_KEY = 'aaeca258c9f845c3a81355fad04d2ccb'; // Your OpenCage API key
+import Config from 'react-native-config';
+
+const OPENCAGE_API_KEY = Config.OPENCAGE_API_KEY;
+
 
 // Forward geocoding: Place name → coordinates
 export const forwardGeocode = async (query) => {

@@ -276,6 +276,7 @@ import MapView, { Marker, Polyline, Callout, CalloutSubview, PROVIDER_GOOGLE } f
 import * as Location from 'expo-location';
 import API from '../utils/api';
 import { haversineDistance } from '../utils/haversine';
+import { TouchableOpacity } from 'react-native';
 
 export default function TrackDistanceScreen({ route }) {
   // const { rideId } = route.params;
@@ -286,6 +287,8 @@ export default function TrackDistanceScreen({ route }) {
   const [pickupCoords, setPickupCoords] = useState(null);
   const [destCoords, setDestCoords] = useState(null);
   const [isDriver, setIsDriver] = useState(false);
+  const [mapFullScreen, setMapFullScreen] = useState(false);
+
 
   const mapRef = useRef(null);
 
@@ -393,6 +396,8 @@ export default function TrackDistanceScreen({ route }) {
         {rideStatus === 'started' && `🏁 Distance to destination: ${haversineDistance(myCoords, destCoords).toFixed(2)} km`}
       </Text> */}
 
+      
+
       <Text style={{ padding: 10, fontSize: 16 }}>
         {rideStatus === 'accepted' &&
           `📏 Distance to pickup: ${(
@@ -403,18 +408,21 @@ export default function TrackDistanceScreen({ route }) {
           `🏁 Distance to destination: ${haversineDistance(myCoords, destCoords).toFixed(2)} km`}
       </Text>
 
+      <TouchableOpacity onPress={() => setMapFullScreen(!mapFullScreen)} style={styles.expandButton}>
+        <Text style={{ color: 'blue' }}>{mapFullScreen ? 'Minimize Map' : 'Full Screen Map'}</Text>
+      </TouchableOpacity>
 
       <MapView
         provider={Platform.OS === 'android' ? 'google' : undefined}
         ref={mapRef}
-        style={styles.map}
+        style={[styles.map, { height: mapFullScreen ? '100%' : '50%' }]}
         initialRegion={{
           latitude: myCoords.lat || 17.385,
           longitude: myCoords.lng || 78.4867,
           latitudeDelta: 0.05,
           longitudeDelta: 0.05,
         }}
-      >
+>
         {/* Driver location */}
         <Marker
           coordinate={{
@@ -423,7 +431,8 @@ export default function TrackDistanceScreen({ route }) {
           }}
           title={isDriver ? 'Driver (You)' : 'You'}
         >
-          <Text style={{ fontSize: 24 }}>🚗</Text>
+          {/* <Text style={{ fontSize: 24 }}>🚗</Text> */}
+           <Text style={{ fontSize: 24 }}>{isDriver ? '🚁' : '🚶'}</Text>
         </Marker>
 
         {/* Pickup location */}
@@ -435,7 +444,8 @@ export default function TrackDistanceScreen({ route }) {
           }}
           title={isDriver ? 'Rider (Pickup)' : 'You'}
         >
-          <Text style={{ fontSize: 20 }}>📍</Text>
+          {/* <Text style={{ fontSize: 20 }}>📍</Text> */}
+          <Text style={{ fontSize: 24 }}>🚶</Text>
         </Marker>
 
 
@@ -487,9 +497,7 @@ export default function TrackDistanceScreen({ route }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: {
-    flex: 1,
     width: '100%',
-    height: '100%',
   },
   status: {
     padding: 10,
@@ -497,5 +505,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#f0f0f0',
   },
+
+  infoPanel: {
+    padding: 15,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+  },
+  statusText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  expandButton: {
+    alignSelf: 'center',
+    padding: 10,
+  }
+
+
 });
 
